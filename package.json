@@ -1,0 +1,38 @@
+{
+  "name": "project-creator",
+  "version": "0.0.1",
+  "description": "Adobe tooling",
+  "main": "index.js",
+  "scripts": {
+    "test": "gulp lint --dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jspc/project-creator.git"
+  },
+  "author": "jspc",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jspc/project-creator/issues"
+  },
+  "homepage": "https://github.com/jspc/project-creator",
+  "devDependencies": {
+    "del": "^2.2.0",
+    "gulp": "^3.9.1",
+    "gulp-awslambda": "^0.4.0",
+    "gulp-concat": "^2.6.0",
+    "gulp-install": "^0.6.0",
+    "gulp-jshint": "^2.0.0",
+    "gulp-uglify": "^1.5.3",
+    "gulp-util": "^3.0.7",
+    "gulp-zip": "^3.2.0",
+    "path": "^0.12.7",
+    "run-sequence": "^1.1.5"
+  },
+  "dependencies": {
+    "async": "^0.2.10",
+    "aws-sdk": "^2.3.9",
+    "gm": "^1.22.0",
+    "mktemp": "^0.4.0"
+  }
+}

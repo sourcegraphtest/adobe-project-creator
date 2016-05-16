@@ -1,0 +1,20 @@
+{
+  "name": "project-creator",
+  "version": "0.0.1",
+  "homepage": "https://github.com/jspc/project-creator",
+  "authors": [
+    "jspc <james@zero-internet.org.uk>"
+  ],
+  "description": "Generate correctly formed project files for premiere pro",
+  "main": "index.js",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+  }
+}
