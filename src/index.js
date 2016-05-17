@@ -1,13 +1,13 @@
-var aws = require('aws-sdk');
-var mktemp = require('mktemp');
-var http = require('http');
-var fs = require('fs');
-var path = require("path");
 var async = require("async");
-var zlib = require('zlib');
-var xml2js = require('xml2js');
+var aws = require('aws-sdk');
+var fs = require('fs');
+var http = require('http');
+var mktemp = require('mktemp');
+var path = require("path");
 var strftime = require('strftime');
-var strstr = require('string-to-stream')
+var strstr = require('string-to-stream');
+var xml2js = require('xml2js');
+var zlib = require('zlib');
 
 var srcBucket = 'ft-project-creator';
 var destBucket = 'jspc-mio-s3-test';
@@ -39,12 +39,15 @@ exports.create = function(event, context, callback){
 };
 
 var readProjectFile = function(po, cb) {
+    var bucket,
+        key;
+
     if (po.create) {
-        var bucket = srcBucket;
-        var key = "project/empty.prproj";
+        bucket = srcBucket;
+        key = "project/empty.prproj";
     } else {
-        var bucket = destBucket;
-        var key = id + "/" + name + ".prproj";
+        bucket = destBucket;
+        key = id + "/" + name + ".prproj";
     }
 
     var gunzip = zlib.createGunzip();
@@ -63,14 +66,29 @@ var readProjectFile = function(po, cb) {
 };
 
 var writeProjectFile = function(po, cb) {
-    var w = fs.createWriteStream('./out.prproj');
     var gzip = zlib.createGzip();
 
+    po.proj = "";
     strstr(po.projXml)
         .pipe(gzip)
-        .pipe(w);
+        .on('data', function(chunk) {
+        if (chunk) po.proj += chunk.toString();
+        })
+        .on('close', function(err) {
+            if (err) throw err;
 
-    cb(null, po);
+            s3.putObject({Bucket: destBucket,
+                          Key: [po.projectId, [po.name, 'prproj'].join('.')].join('/'),
+                          Body: po.proj
+                         }, function(err, data) {
+                             if (err) throw err;
+                             else {
+                                 console.log("Successfully uploaded data");
+                                 cb(null, po);
+                             }
+                         });
+        });
+
 };
 
 var fromXml = function(po, cb) {
@@ -105,12 +123,4 @@ var mungeLastPath = function(po, cb) {
     po.proj.PremiereData.Project[1].Node[0].Properties[0]['project.settings.lastknowngoodprojectpath'] = path.join(po.srcPath, po.name, po.id + ".prproj");
 
     cb(null, po);
-}
-
-exports.create({projectId: 12345,
-                name: 'my_project',
-                srcPath: '/Users/jspc/tmp'},
-               {},
-               function(err, data) {
-                   console.log(data);
-               });
+};

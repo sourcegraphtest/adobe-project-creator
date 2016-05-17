@@ -7,10 +7,11 @@ var install = require("gulp-install");
 var jshint = require('gulp-jshint');
 var lambda = require('gulp-awslambda');
 var path = require('path');
-var paths = {};
 var sequence = require('run-sequence');
 var uglify = require('gulp-uglify');
 var zip = require('gulp-zip');
+
+var paths = {};
 
 paths.src = {};
 paths.src.root = './src';
