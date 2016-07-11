@@ -1,126 +1,91 @@
 var async = require("async");
 var aws = require('aws-sdk');
-var fs = require('fs');
-var http = require('http');
-var mktemp = require('mktemp');
 var path = require("path");
-var strftime = require('strftime');
-var strstr = require('string-to-stream');
-var xml2js = require('xml2js');
-var zlib = require('zlib');
 
-var srcBucket = 'ft-project-creator';
-var destBucket = 'jspc-mio-s3-test';
-
-var s3 = new aws.S3();
+var prefix = 'project';
 
 exports.create = function(event, context, callback){
-    var projectObj = {
-        projectId: event.projectId,
-        name: event.name,
-        srcPath: event.srcPath,
-        create: true
-    };
+    var srcBucket = event.srcBucket;
+    var dstBucket = event.dstBucket;
 
-    async.waterfall([
-        async.apply(readProjectFile, projectObj),
-        fromXml,
-        mungeCreatedDate,
-        mungeUpdatedDate,
-        mungeLastPath,
-        toXml,
-        writeProjectFile
-    ]);
+    var projectName = mutate(event.name);
+    var projectUUID = event.uuid;
 
-    callback(null, {
-        projectId: event.projectId,
-        prproj: "https://s3-eu-west-1.amazonaws.com/jspc-mio-s3-test/" + event.projectId + "/" + event.name + ".prproj",
+    var src = new aws.S3({params: {Bucket: srcBucket}, region: 'eu-west-1'});
+    var dst = new aws.S3({params: {Bucket: dstBucket}, region: 'eu-west-1'});
+
+    src.listObjects({Prefix: prefix}, function(err, data) {
+        if(err) {
+            console.log(err);
+            callback();
+        }
+
+        if (data.Contents.length) {
+            async.each(data.Contents, function(file, cb) {
+                var baseFile = path.basename(file.Key);
+                var suffix = path.extname(baseFile);
+
+                if (baseFile != prefix) {
+                    src.getObject({
+                        Key: file.Key
+                    }, function(err, data) {
+                        if (err) {
+                            console.log(err);
+                            callback();
+                        }
+                        upload({bucket: dst,
+                                projectName: projectName,
+                                body: data.Body,
+                                projectUUID: projectUUID,
+                                suffix: suffix
+                               },
+                               cb);
+                    });
+                }
+
+            }, function(err) {
+                if (err) {
+                    console.log(err);
+                }
+            });
+        }
     });
-};
 
-var readProjectFile = function(po, cb) {
-    var bucket,
-        key;
-
-    if (po.create) {
-        bucket = srcBucket;
-        key = "project/empty.prproj";
-    } else {
-        bucket = destBucket;
-        key = id + "/" + name + ".prproj";
-    }
-
-    var gunzip = zlib.createGunzip();
-    po.projXml = "";
-
-    s3.getObject({Bucket: bucket, Key: key})
-        .createReadStream()
-        .pipe(gunzip)
-        .on('data', function(chunk) {
-            if (chunk) po.projXml += chunk.toString();
-        })
-        .on('close', function(err) {
-            if (err) throw err;
-            cb(null, po);
-        });
-};
-
-var writeProjectFile = function(po, cb) {
-    var gzip = zlib.createGzip();
-
-    po.proj = "";
-    strstr(po.projXml)
-        .pipe(gzip)
-        .on('data', function(chunk) {
-        if (chunk) po.proj += chunk.toString();
-        })
-        .on('close', function(err) {
-            if (err) throw err;
-
-            s3.putObject({Bucket: destBucket,
-                          Key: [po.projectId, [po.name, 'prproj'].join('.')].join('/'),
-                          Body: po.proj
-                         }, function(err, data) {
-                             if (err) throw err;
-                             else {
-                                 console.log("Successfully uploaded data");
-                                 cb(null, po);
-                             }
-                         });
-        });
+    callback();
 
 };
 
-var fromXml = function(po, cb) {
-    xml2js.parseString(po.projXml, function (err, result) {
-        if (err) throw err;
-        po.proj = result;
+var upload = function(opts, callback) {
+    var key = [opts.projectUUID, [opts.projectName, opts.suffix].join('')].join('/');
 
-        cb(null, po);
+    opts.bucket.putObject({
+        Key: key,
+        Body: opts.body
+    }, function(err, data) {
+        if (err) {
+            console.log(err);
+        } else {
+            callback();
+        }
     });
+
 };
 
-var toXml = function(po, cb) {
-    var builder = new xml2js.Builder();
-    po.projXml = builder.buildObject(po.proj);
-
-    cb(null, po);
+var mutate = function(s) {
+    return s.replace(' ', '_');
 };
 
-var mungeCreatedDate = function(po, cb) {
-    po.proj.PremiereData.Project[1].Node[0].Properties[0]['MZ.BuildVersion.Created'] = "9.2.0x41 - " + strftime('%a %b %e %T %Y');
 
-    cb(null, po);
-};
+// var payload = {
+//     srcBucket: 'ft-project-creator',
+//     dstBucket: 'jspc-mio-s3-test',
+//     uuid: 12345,
+//     name: 'poo'
+// };
 
-var mungeUpdatedDate = function(po, cb) {
-    po.proj.PremiereData.Project[1].Node[0].Properties[0]['MZ.BuildVersion.Modified'] = "9.2.0x41 - " + strftime('%a %b %e %T %Y');
-
-    cb(null, po);
-};
-
-var mungeLastPath = function(po, cb) {
-    po.proj.PremiereData.Project[1].Node[0].Properties[0]['project.settings.lastknowngoodprojectpath'] = path.join(po.srcPath, po.name, po.id + ".prproj");
-
-    cb(null, po);
-};
+// var x = exports.create(payload,
+//                        {},
+//                        function(err,out) {
+//                            console.log(out);
+//                        });
+// console.log(x);
