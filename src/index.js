@@ -1,6 +1,6 @@
-var async = require("async");
+var async = require('async');
 var aws = require('aws-sdk');
-var path = require("path");
+var path = require('path');
 
 var prefix = 'project';
 
