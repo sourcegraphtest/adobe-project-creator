@@ -72,7 +72,7 @@ var upload = function(opts, callback) {
 };
 
 var mutate = function(s) {
-    return s.replace(' ', '_');
+    return s.replace(/ /g, '_');
 };
 
 
