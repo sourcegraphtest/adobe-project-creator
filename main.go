@@ -21,15 +21,16 @@ func main(){
     flag.Parse()
 
     LoadConfig()
-    log.Printf( "Returning creating projects under the %s cluster", cluster.ID )
+    log.Printf( "Creating projects under the %s cluster", cluster.ID )
+    log.Printf( "Running in %s mode", *mode )
 
     switch *mode {
     case "rest":
         http.HandleFunc("/", Router)
         http.ListenAndServe(":8000", nil)
     case "rabbit":
-        //
-        _, err := NewConsumer(*amqpUri, "something", "somethingelse")
+        log.Printf("Using %s", *amqpUri)
+        _, err := NewConsumer(*amqpUri, "create", "creator")
         if err != nil {
             log.Fatal(err.Error())
         }

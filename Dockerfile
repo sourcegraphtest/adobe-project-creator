@@ -6,4 +6,4 @@ COPY project-files/* /
 COPY ./project-creator /project-creator
 
 EXPOSE 8000
-CMD ["/project-creator"]
+ENTRYPOINT ["/project-creator"]
