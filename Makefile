@@ -1,7 +1,7 @@
 GOARGS=-a -installsuffix cgo -x
 GOENV=CGO_ENABLED=0
 BINDIR=/usr/local/sbin
-EXECUTABLE=project-creator
+EXECUTABLE=adobe-project-creator
 CONTAINER_TAG=quay.io/financialtimes/project-creator:latest
 
 all: main

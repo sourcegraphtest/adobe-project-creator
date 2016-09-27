@@ -3,7 +3,7 @@ FROM alpine
 RUN apk --update add ca-certificates
 
 COPY project-files/* /
-COPY ./project-creator /project-creator
+COPY ./adobe-project-creator /adobe-project-creator
 
 EXPOSE 8000
-ENTRYPOINT ["/project-creator"]
+ENTRYPOINT ["/adobe-project-creator"]
